@@ -5,7 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Takeups",
   description: "Your opinion has been assigned.",
-  metadataBase: new URL("https://takeups.example")
+  metadataBase: new URL("https://takeups.example"),
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg"
+  }
 };
 
 export const viewport: Viewport = {
