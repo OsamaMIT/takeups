@@ -47,6 +47,8 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
   const draftFlushRef = useRef<number | null>(null);
   const pendingDraftsRef = useRef<Record<string, string>>({});
   const autoJoinRef = useRef(false);
+  const storedAutoJoinNameRef = useRef<string | null>(null);
+  const userEditedNameRef = useRef(false);
 
   const pushToast = useCallback((message: string) => {
     const id = crypto.randomUUID();
@@ -117,7 +119,11 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
 
   useEffect(() => {
     const hydrateStoredSession = window.setTimeout(() => {
-      setDisplayName((current) => current || getStoredDisplayName());
+      const storedName = getStoredDisplayName();
+      if (storedName && !userEditedNameRef.current) {
+        storedAutoJoinNameRef.current = storedName;
+      }
+      setDisplayName((current) => current || storedName);
       setMuted(getSoundMuted());
       setSessionId(getOrCreateSessionId());
     }, 0);
@@ -137,7 +143,8 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
       autoJoinRef.current ||
       state?.selfId ||
       !displayName.trim() ||
-      !sessionId
+      !sessionId ||
+      storedAutoJoinNameRef.current !== displayName.trim()
     ) {
       return;
     }
@@ -244,7 +251,11 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
               </span>
               <input
                 value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
+                onChange={(event) => {
+                  userEditedNameRef.current = true;
+                  storedAutoJoinNameRef.current = null;
+                  setDisplayName(event.target.value);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") join();
                 }}

@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/Card";
 import { createClientRoomCode, getStoredDisplayName, storeDisplayName } from "@/lib/session";
 import { formatRoomCode } from "@/lib/utils";
 
+const ROOM_CODE_LENGTH = 6;
+
 const fakeStands = [
   ["ASSIGNED STAND", "Cereal is soup.", "Milk is broth with better branding."],
   ["DEFENSE REQUIRED", "Tall burgers should be banned.", "Dinner should not require load-bearing analysis."],
@@ -42,9 +44,8 @@ export function LandingPage() {
   }
 
   function joinRoom() {
-    if (!persistName()) return;
     const code = formatRoomCode(roomCode);
-    if (!code) return;
+    if (code.length !== ROOM_CODE_LENGTH || !persistName()) return;
     router.push(`/room/${code}`);
   }
 
@@ -106,15 +107,25 @@ export function LandingPage() {
               </span>
               <input
                 value={roomCode}
-                onChange={(event) => setRoomCode(formatRoomCode(event.target.value))}
+                onChange={(event) =>
+                  setRoomCode(formatRoomCode(event.target.value).slice(0, ROOM_CODE_LENGTH))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") joinRoom();
                 }}
                 className="w-full rounded-md border border-takeups-border bg-takeups-bg px-4 py-3 font-mono text-lg tracking-[0.2em] text-takeups-text outline-none focus:border-takeups-blue"
                 placeholder="A7K9Q2"
+                maxLength={ROOM_CODE_LENGTH}
               />
             </label>
-            <Button type="button" onClick={joinRoom} variant="secondary" className="mt-4 w-full" icon={<ArrowRight size={17} />}>
+            <Button
+              type="button"
+              onClick={joinRoom}
+              variant="secondary"
+              className="mt-4 w-full"
+              icon={<ArrowRight size={17} />}
+              disabled={formatRoomCode(roomCode).length !== ROOM_CODE_LENGTH}
+            >
               Join Room
             </Button>
           </Card>
