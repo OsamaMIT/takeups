@@ -40,7 +40,7 @@ Deploy the PartyKit server with:
 npm run deploy:party
 ```
 
-Set `NEXT_PUBLIC_PARTYKIT_HOST` on the frontend deployment to `takeups.osamamit.partykit.dev`. Deploy the Next.js app to Vercel, Cloudflare Pages, or another host that supports Next.js.
+Set `NEXT_PUBLIC_PARTYKIT_HOST` on the frontend deployment to `takeups.osamamit.partykit.dev`. The frontend is exported as static files to `out`, with Netlify rewriting `/room/*` to the static room shell.
 
 No database is required. Room state is persisted in PartyKit room storage under `room-state-v1`.
 

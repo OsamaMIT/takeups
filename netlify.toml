@@ -1,7 +1,12 @@
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "out"
 
 [build.environment]
   NEXT_PUBLIC_PARTYKIT_HOST = "takeups.osamamit.partykit.dev"
   NEXT_TELEMETRY_DISABLED = "1"
+
+[[redirects]]
+  from = "/room/*"
+  to = "/room"
+  status = 200
