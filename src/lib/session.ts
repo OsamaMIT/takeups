@@ -40,7 +40,7 @@ export function setSoundMuted(muted: boolean) {
 }
 
 export function getPartyHost(): string {
-  return process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999";
+  return process.env.NEXT_PUBLIC_PARTYKIT_HOST || "takeups.osamamit.partykit.dev";
 }
 
 export function createClientRoomCode(): string {

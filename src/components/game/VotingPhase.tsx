@@ -60,7 +60,8 @@ export function VotingPhase({
               matchupId={card.matchupId}
               label="Stand A"
               disabled={!card.canVote || card.hasVoted}
-              selected={card.hasVoted}
+              selected={card.votedFor === card.optionA}
+              closed={card.hasVoted}
               onVote={onVote}
             />
             <VoteOption
@@ -70,7 +71,8 @@ export function VotingPhase({
               matchupId={card.matchupId}
               label="Stand B"
               disabled={!card.canVote || card.hasVoted}
-              selected={card.hasVoted}
+              selected={card.votedFor === card.optionB}
+              closed={card.hasVoted}
               onVote={onVote}
             />
           </div>
@@ -98,6 +100,7 @@ function VoteOption({
   optionId,
   disabled,
   selected,
+  closed,
   onVote
 }: {
   label: string;
@@ -107,6 +110,7 @@ function VoteOption({
   optionId: string;
   disabled: boolean;
   selected: boolean;
+  closed: boolean;
   onVote: (matchupId: string, optionId: string) => void;
 }) {
   return (
@@ -126,7 +130,7 @@ function VoteOption({
         icon={<Gavel size={16} />}
         className="mt-5 w-full"
       >
-        {selected ? "Recorded" : `Vote ${label.slice(-1)}`}
+        {selected ? "Recorded" : closed ? "Closed" : `Vote ${label.slice(-1)}`}
       </Button>
     </div>
   );

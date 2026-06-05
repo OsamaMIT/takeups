@@ -217,6 +217,7 @@ export function getVotingCard(
   const viewerIsOnStand = viewerId === matchup.playerA || viewerId === matchup.playerB;
   const playerA = state.players[matchup.playerA];
   const playerB = state.players[matchup.playerB];
+  const votedFor = viewerId ? state.votes[matchup.id]?.[viewerId] : undefined;
   const base = {
     matchupId: matchup.id,
     topicPrompt: topic.prompt,
@@ -227,7 +228,8 @@ export function getVotingCard(
     defenseA: state.submissions[matchup.id]?.[matchup.playerA] ?? DEFAULT_DEFENSE,
     defenseB: state.submissions[matchup.id]?.[matchup.playerB] ?? DEFAULT_DEFENSE,
     canVote: canVoteOnMatchup(state, matchup, viewerId),
-    hasVoted: Boolean(viewerId && state.votes[matchup.id]?.[viewerId]),
+    hasVoted: Boolean(votedFor),
+    votedFor,
     viewerIsOnStand
   };
 

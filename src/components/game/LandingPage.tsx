@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, DoorOpen, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BackgroundFX } from "@/components/layout/BackgroundFX";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -18,10 +18,15 @@ const fakeStands = [
 
 export function LandingPage() {
   const router = useRouter();
-  const [name, setName] = useState(() =>
-    typeof window === "undefined" ? "" : getStoredDisplayName()
-  );
+  const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+
+  useEffect(() => {
+    const hydrateStoredName = window.setTimeout(() => {
+      setName((current) => current || getStoredDisplayName());
+    }, 0);
+    return () => window.clearTimeout(hydrateStoredName);
+  }, []);
 
   function persistName(): boolean {
     const clean = name.trim().slice(0, 24);

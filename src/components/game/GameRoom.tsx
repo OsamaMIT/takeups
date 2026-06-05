@@ -36,19 +36,13 @@ import type {
 export function GameRoom({ roomCode }: { roomCode: string }) {
   const [state, setState] = useState<PublicRoomState | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [displayName, setDisplayName] = useState(() =>
-    typeof window === "undefined" ? "" : getStoredDisplayName()
-  );
+  const [displayName, setDisplayName] = useState("");
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "open" | "closed">(
     "connecting"
   );
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [muted, setMuted] = useState(() =>
-    typeof window === "undefined" ? true : getSoundMuted()
-  );
-  const [sessionId, setSessionId] = useState(() =>
-    typeof window === "undefined" ? "" : getOrCreateSessionId()
-  );
+  const [muted, setMuted] = useState(true);
+  const [sessionId, setSessionId] = useState("");
   const phaseRef = useRef<GamePhase | null>(null);
   const draftFlushRef = useRef<number | null>(null);
   const pendingDraftsRef = useRef<Record<string, string>>({});
@@ -96,6 +90,15 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
     },
     onMessage(event) {
       const message = JSON.parse(event.data) as ServerMessage;
+      if (message.type === "snapshot") {
+        setState(message.state);
+        setAssignments((current) => mergeAssignments(current, message.assignments));
+        if (phaseRef.current && phaseRef.current !== message.state.phase) {
+          playCue(message.state.phase);
+        }
+        phaseRef.current = message.state.phase;
+        return;
+      }
       if (message.type === "state") {
         setState(message.state);
         if (phaseRef.current && phaseRef.current !== message.state.phase) {
@@ -111,6 +114,15 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
       }
     }
   });
+
+  useEffect(() => {
+    const hydrateStoredSession = window.setTimeout(() => {
+      setDisplayName((current) => current || getStoredDisplayName());
+      setMuted(getSoundMuted());
+      setSessionId(getOrCreateSessionId());
+    }, 0);
+    return () => window.clearTimeout(hydrateStoredSession);
+  }, []);
 
   const send = useCallback(
     (message: ClientMessage) => {
@@ -267,7 +279,15 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
           state={state}
           assignments={assignments}
           onDraft={updateDraft}
-          onReady={() => send({ type: "ready" })}
+          onReady={() => {
+            pendingDraftsRef.current = {};
+            send({
+              type: "submit_defenses",
+              defenses: Object.fromEntries(
+                assignments.map((assignment) => [assignment.matchupId, assignment.draft])
+              )
+            });
+          }}
           onUnready={() => send({ type: "unready" })}
         />
       );

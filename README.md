@@ -8,7 +8,7 @@ Takeups is a private-room multiplayer party game where players defend assigned r
 - PartyKit room server and PartySocket client
 - Tailwind CSS, Framer Motion, lucide-react
 - Zod validation, nanoid IDs
-- Vitest unit tests and Playwright smoke tests
+- Vitest unit tests and Playwright end-to-end gameplay tests
 
 ## Local Development
 
@@ -18,7 +18,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. PartyKit runs on `localhost:1999` and the frontend reads that through `NEXT_PUBLIC_PARTYKIT_HOST`.
+Open `http://localhost:3000`. By default the frontend uses the deployed PartyKit host `takeups.osamamit.partykit.dev` through `NEXT_PUBLIC_PARTYKIT_HOST`. To test against a local PartyKit server instead, set `NEXT_PUBLIC_PARTYKIT_HOST=localhost:1999`.
 
 Useful commands:
 
@@ -40,13 +40,13 @@ Deploy the PartyKit server with:
 npm run deploy:party
 ```
 
-Set `NEXT_PUBLIC_PARTYKIT_HOST` on the frontend deployment to the deployed PartyKit host, for example `takeups.yourname.partykit.dev`. Deploy the Next.js app to Vercel, Cloudflare Pages, or another host that supports Next.js.
+Set `NEXT_PUBLIC_PARTYKIT_HOST` on the frontend deployment to `takeups.osamamit.partykit.dev`. Deploy the Next.js app to Vercel, Cloudflare Pages, or another host that supports Next.js.
 
 No database is required. Room state is persisted in PartyKit room storage under `room-state-v1`.
 
 ## Architecture
 
-- `server/party.ts`: authoritative room server. It validates messages, persists state, recovers timers, transfers host, and broadcasts public/private state.
+- `server/party.ts`: authoritative room server. It validates messages, persists state, recovers timers, transfers host, and sends per-client public/private snapshots.
 - `src/types/game.ts`: canonical TypeScript models and message contracts.
 - `src/lib/game.ts`: hidden-cycle round generation, assignment derivation, state projection, phase transitions.
 - `src/lib/scoring.ts`: vote-ratio scoring and round stats.

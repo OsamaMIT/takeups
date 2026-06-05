@@ -24,6 +24,11 @@ export type Player = {
   color?: string;
 };
 
+export type RevealedPlayer = Pick<
+  Player,
+  "id" | "name" | "connected" | "isHost" | "joinedAt" | "avatar" | "color"
+>;
+
 export type Topic = {
   id: TopicId;
   prompt: string;
@@ -57,8 +62,8 @@ export type RoomSettings = {
 export type MatchupResult = {
   matchupId: MatchupId;
   topic: Topic;
-  playerA: Player;
-  playerB: Player;
+  playerA: RevealedPlayer;
+  playerB: RevealedPlayer;
   optionA: VoteOptionId;
   optionB: VoteOptionId;
   sideA: string;
@@ -144,6 +149,7 @@ export type PublicVotingCard = {
   defenseB: string;
   canVote: boolean;
   hasVoted: boolean;
+  votedFor?: VoteOptionId;
   viewerIsOnStand: boolean;
   revealed?: {
     playerA: PublicPlayer;
@@ -201,6 +207,12 @@ export type ClientMessage =
   | { type: "restart_game" };
 
 export type ServerMessage =
+  | {
+      type: "snapshot";
+      state: PublicRoomState;
+      assignments: Assignment[];
+      card: PublicVotingCard | null;
+    }
   | { type: "state"; state: PublicRoomState }
   | { type: "private_assignments"; assignments: Assignment[] }
   | { type: "phase_changed"; phase: GamePhase }

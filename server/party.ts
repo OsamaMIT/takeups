@@ -203,6 +203,7 @@ export default class TakeupsServer implements Party.Server {
     if (this.state.phase !== "lobby" && this.state.phase !== "round_result") {
       throw new Error("A round cannot start right now.");
     }
+    this.promoteSpectatorsToPlayers();
     const activePlayers = Object.values(this.state.players).filter((player) => player.connected);
     if (activePlayers.length < MIN_PLAYERS) {
       throw new Error(`Takeups needs at least ${MIN_PLAYERS} connected players.`);
@@ -304,6 +305,7 @@ export default class TakeupsServer implements Party.Server {
         };
         return;
       }
+      this.promoteSpectatorsToPlayers();
       this.state = startNewRound(this.state);
       return;
     }
@@ -337,6 +339,24 @@ export default class TakeupsServer implements Party.Server {
     delete this.state.totalScores[playerId];
     delete this.state.roundScores[playerId];
     this.state.updatedAt = Date.now();
+  }
+
+  private promoteSpectatorsToPlayers() {
+    const availableSlots = MAX_PLAYERS - Object.keys(this.state.players).length;
+    if (availableSlots <= 0) return;
+    const incoming = Object.values(this.state.spectators)
+      .filter((player) => player.connected)
+      .sort((a, b) => a.joinedAt - b.joinedAt)
+      .slice(0, availableSlots);
+
+    for (const spectator of incoming) {
+      delete this.state.spectators[spectator.id];
+      this.state.players[spectator.id] = {
+        ...spectator,
+        isHost: spectator.id === this.state.hostId
+      };
+      this.state.totalScores[spectator.id] ??= 0;
+    }
   }
 
   private async recoverTimers() {
@@ -464,13 +484,13 @@ export default class TakeupsServer implements Party.Server {
   private sendState(connection: Party.Connection) {
     const actor = this.actor(connection);
     const viewerId = actor?.id ?? null;
-    this.send(connection, { type: "state", state: getPublicRoomState(this.state, viewerId) });
+    const publicState = getPublicRoomState(this.state, viewerId);
     this.send(connection, {
-      type: "private_assignments",
-      assignments: getAssignments(this.state, this.state.players[viewerId ?? ""] ? viewerId : null)
+      type: "snapshot",
+      state: publicState,
+      assignments: getAssignments(this.state, this.state.players[viewerId ?? ""] ? viewerId : null),
+      card: publicState.currentVotingCard ?? null
     });
-    const card = getPublicRoomState(this.state, viewerId).currentVotingCard ?? null;
-    this.send(connection, { type: "current_vote", card });
   }
 
   private broadcastState() {

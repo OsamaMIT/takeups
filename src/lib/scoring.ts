@@ -4,11 +4,24 @@ import type {
   MatchupResult,
   Player,
   PlayerId,
+  RevealedPlayer,
   RoomState,
   RoundStats,
   Topic,
   VoteOptionId
 } from "@/types/game";
+
+function toRevealedPlayer(player: Player): RevealedPlayer {
+  return {
+    id: player.id,
+    name: player.name,
+    connected: player.connected,
+    isHost: player.isHost,
+    joinedAt: player.joinedAt,
+    avatar: player.avatar,
+    color: player.color
+  };
+}
 
 export function percentage(votes: number, totalVotes: number): number {
   if (totalVotes === 0) return 50;
@@ -39,8 +52,8 @@ export function scoreMatchup(args: {
   return {
     matchupId: matchup.id,
     topic,
-    playerA: players[matchup.playerA],
-    playerB: players[matchup.playerB],
+    playerA: toRevealedPlayer(players[matchup.playerA]),
+    playerB: toRevealedPlayer(players[matchup.playerB]),
     optionA,
     optionB,
     sideA: matchup.sideByPlayer[matchup.playerA],
