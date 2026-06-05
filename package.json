@@ -1,0 +1,50 @@
+{
+  "name": "takeups",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n next,party -c blue,magenta \"npm run dev:web\" \"npm run dev:party\"",
+    "dev:web": "next dev",
+    "dev:party": "partykit dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "deploy:party": "partykit deploy"
+  },
+  "dependencies": {
+    "clsx": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest",
+    "nanoid": "latest",
+    "next": "latest",
+    "partysocket": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwind-merge": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "latest",
+    "@playwright/test": "latest",
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "autoprefixer": "latest",
+    "concurrently": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "partykit": "latest",
+    "postcss": "8.5.15",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  },
+  "overrides": {
+    "postcss": "8.5.15"
+  }
+}

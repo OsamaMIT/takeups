@@ -1,0 +1,6 @@
+{
+  "name": "takeups",
+  "main": "server/party.ts",
+  "port": 1999,
+  "compatibilityDate": "2026-06-05"
+}
