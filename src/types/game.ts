@@ -119,6 +119,7 @@ export type RoomState = {
   matchupResultEndsAt?: number;
   matchups: Matchup[];
   votingOrder: MatchupId[];
+  usedTopicIds: TopicId[];
   currentVoteIndex: number;
   submissions: Record<MatchupId, Record<PlayerId, string>>;
   drafts: Record<PlayerId, Record<MatchupId, string>>;

@@ -23,7 +23,8 @@ import type {
   PublicVotingCard,
   RoomSettings,
   RoomState,
-  Topic
+  Topic,
+  TopicId
 } from "@/types/game";
 
 export function createRoomCode(): string {
@@ -41,6 +42,7 @@ export function createInitialRoomState(roomCode: string, now = Date.now()): Room
     roundNumber: 0,
     matchups: [],
     votingOrder: [],
+    usedTopicIds: [],
     currentVoteIndex: 0,
     submissions: {},
     drafts: {},
@@ -78,11 +80,18 @@ export function generateRound(
   players: Player[],
   topics: Topic[],
   rng: () => number = Math.random,
-  topicWeight: (topic: Topic) => number = () => 1
+  topicWeight: (topic: Topic) => number = () => 1,
+  usedTopicIds: Iterable<TopicId> = []
 ): Matchup[] {
   if (players.length < 2 || topics.length === 0) return [];
   const shuffledPlayers = shuffle(players, rng);
-  const selectedTopics = selectWeightedTopics(topics, shuffledPlayers.length, rng, topicWeight);
+  const selectedTopics = selectRoundTopics(
+    topics,
+    shuffledPlayers.length,
+    rng,
+    topicWeight,
+    usedTopicIds
+  );
 
   return shuffledPlayers.map((playerA, index) => {
     const playerB = shuffledPlayers[(index + 1) % shuffledPlayers.length];
@@ -143,6 +152,64 @@ export function selectWeightedTopics(
   return selected;
 }
 
+export function selectRoundTopics(
+  topics: Topic[],
+  count: number,
+  rng: () => number = Math.random,
+  topicWeight: (topic: Topic) => number = () => 1,
+  usedTopicIds: Iterable<TopicId> = []
+): Topic[] {
+  const history = Array.from(usedTopicIds);
+  const used = new Set(history);
+  const unseenTopics = topics.filter((topic) => !used.has(topic.id));
+
+  if (unseenTopics.length >= count) {
+    return selectWeightedTopics(unseenTopics, count, rng, topicWeight);
+  }
+
+  const selected = unseenTopics.length
+    ? selectWeightedTopics(unseenTopics, unseenTopics.length, rng, topicWeight)
+    : [];
+  const selectedIds = new Set(selected.map((topic) => topic.id));
+  const lastSeenIndex = new Map<TopicId, number>();
+  history.forEach((topicId, index) => lastSeenIndex.set(topicId, index));
+  const repeatCandidates = topics.filter((topic) => !selectedIds.has(topic.id));
+  const repeatWeight = (topic: Topic) => {
+    const seenIndex = lastSeenIndex.get(topic.id);
+    const olderTopicBoost = seenIndex === undefined ? history.length + 1 : history.length - seenIndex;
+    return Math.max(1, Math.floor(topicWeight(topic))) * Math.max(1, olderTopicBoost);
+  };
+
+  return [
+    ...selected,
+    ...selectWeightedTopics(repeatCandidates, count - selected.length, rng, repeatWeight)
+  ];
+}
+
+export function nextTopicHistory(
+  previousTopicIds: TopicId[],
+  selectedTopicIds: TopicId[],
+  availableTopicIds: TopicId[],
+  roundTopicCount: number
+): TopicId[] {
+  const available = new Set(availableTopicIds);
+  const validPrevious = previousTopicIds.filter((topicId) => available.has(topicId));
+  const alreadyUsed = new Set(validPrevious);
+  const unseenCount = availableTopicIds.filter((topicId) => !alreadyUsed.has(topicId)).length;
+  const shouldResetCycle = unseenCount < roundTopicCount;
+  const next = shouldResetCycle ? selectedTopicIds : [...validPrevious, ...selectedTopicIds];
+  const deduped: TopicId[] = [];
+
+  for (const topicId of next) {
+    if (!available.has(topicId)) continue;
+    const existingIndex = deduped.indexOf(topicId);
+    if (existingIndex >= 0) deduped.splice(existingIndex, 1);
+    deduped.push(topicId);
+  }
+
+  return deduped;
+}
+
 export function getSelectedTopics(settings: RoomSettings): Topic[] {
   const selected = filterTopics(TOPICS, settings.topicPacks, settings.intensity);
   const customTopics = customTopicsToTopics(settings.customTopics ?? []);
@@ -169,8 +236,21 @@ export function findTopic(settings: RoomSettings, topicId: string): Topic | unde
 
 export function startNewRound(state: RoomState, now = Date.now()): RoomState {
   const activePlayers = Object.values(state.players).filter((player) => player.connected);
-  const matchups = generateRound(activePlayers, getSelectedTopics(state.settings), Math.random, topicWeight);
+  const topicPool = getSelectedTopics(state.settings);
+  const matchups = generateRound(
+    activePlayers,
+    topicPool,
+    Math.random,
+    topicWeight,
+    state.usedTopicIds ?? []
+  );
   const votingOrder = shuffle(matchups.map((matchup) => matchup.id));
+  const usedTopicIds = nextTopicHistory(
+    state.usedTopicIds ?? [],
+    matchups.map((matchup) => matchup.topicId),
+    topicPool.map((topic) => topic.id),
+    activePlayers.length
+  );
   const drafts: RoomState["drafts"] = {};
   const submissions: RoomState["submissions"] = {};
 
@@ -192,6 +272,7 @@ export function startNewRound(state: RoomState, now = Date.now()): RoomState {
     matchupResultEndsAt: undefined,
     matchups,
     votingOrder,
+    usedTopicIds,
     currentVoteIndex: 0,
     submissions,
     drafts,
@@ -456,6 +537,7 @@ export function restartRoom(state: RoomState, now = Date.now()): RoomState {
     matchupResultEndsAt: undefined,
     matchups: [],
     votingOrder: [],
+    usedTopicIds: [],
     currentVoteIndex: 0,
     submissions: {},
     drafts: {},

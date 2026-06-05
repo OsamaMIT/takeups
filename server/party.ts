@@ -58,6 +58,7 @@ export default class TakeupsServer implements Party.Server {
     const stored = await this.room.storage.get<RoomState>(STORAGE_KEY);
     this.state = stored ?? createInitialRoomState(this.room.id.toUpperCase());
     this.state.settings = this.normalizeSettings(this.state.settings);
+    this.state.usedTopicIds = Array.isArray(this.state.usedTopicIds) ? this.state.usedTopicIds : [];
     await this.recoverTimers();
     this.scheduleTimer();
   }

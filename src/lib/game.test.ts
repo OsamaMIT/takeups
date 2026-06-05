@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { generateRound, getSelectedTopics, selectWeightedTopics } from "@/lib/game";
+import {
+  generateRound,
+  getSelectedTopics,
+  nextTopicHistory,
+  selectRoundTopics,
+  selectWeightedTopics
+} from "@/lib/game";
 import { TOPICS } from "@/lib/topics";
 import type { Player, RoomSettings } from "@/types/game";
 import { CUSTOM_TOPIC_PACK, DEFAULT_SETTINGS } from "@/lib/constants";
@@ -93,5 +99,21 @@ describe("generateRound", () => {
     );
 
     expect(selected[0].id).toBe("custom-a");
+  });
+
+  it("avoids repeated topics across rounds while unused topics are available", () => {
+    const topics = TOPICS.slice(0, 6);
+    const usedTopicIds = topics.slice(0, 3).map((topic) => topic.id);
+    const selected = selectRoundTopics(topics, 3, () => 0.5, () => 1, usedTopicIds);
+
+    expect(selected).toHaveLength(3);
+    expect(selected.every((topic) => !usedTopicIds.includes(topic.id))).toBe(true);
+  });
+
+  it("resets the no-repeat topic cycle only when the pool is exhausted", () => {
+    const topicIds = ["a", "b", "c", "d"];
+    const history = nextTopicHistory(["a", "b", "c"], ["d", "a", "b"], topicIds, 3);
+
+    expect(history).toEqual(["d", "a", "b"]);
   });
 });
