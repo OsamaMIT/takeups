@@ -11,7 +11,7 @@ export type GamePhase =
   | "round_result"
   | "game_over";
 
-export type TopicIntensity = "safe" | "spicy" | "absurd";
+export type TopicIntensity = "spicy" | "absurd";
 
 export type Player = {
   id: PlayerId;

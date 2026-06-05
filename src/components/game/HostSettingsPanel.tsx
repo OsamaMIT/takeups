@@ -81,8 +81,8 @@ export function HostSettingsPanel({
         <label className="mb-2 block text-xs font-bold uppercase tracking-[0.22em] text-takeups-muted">
           Intensity
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {(["safe", "spicy", "absurd"] as const).map((intensity) => (
+        <div className="grid grid-cols-2 gap-2">
+          {(["spicy", "absurd"] as const).map((intensity) => (
             <Button
               key={intensity}
               type="button"

@@ -3,6 +3,7 @@
 import usePartySocket from "partysocket/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackgroundFX } from "@/components/layout/BackgroundFX";
 import { ConnectionStatus } from "@/components/game/ConnectionStatus";
@@ -199,7 +200,13 @@ export function GameRoom({ roomCode }: { roomCode: string }) {
       <div className="mx-auto max-w-7xl">
         <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="font-heading text-2xl font-bold tracking-[0.28em]">TAKEUPS</div>
+            <Link
+              href="/"
+              aria-label="Go to Takeups home"
+              className="inline-block font-heading text-2xl font-bold tracking-[0.28em] outline-none transition-colors hover:text-takeups-blue focus-visible:text-takeups-blue"
+            >
+              TAKEUPS
+            </Link>
             <div className="mt-1 text-xs font-bold uppercase tracking-[0.24em] text-takeups-muted">
               Your opinion has been assigned.
             </div>

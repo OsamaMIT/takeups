@@ -29,7 +29,14 @@ import {
   sanitizeName
 } from "../src/lib/validation";
 import { TOPIC_PACKS } from "../src/lib/topics";
-import type { ClientMessage, Player, PlayerId, RoomState, ServerMessage } from "../src/types/game";
+import type {
+  ClientMessage,
+  Player,
+  PlayerId,
+  RoomSettings,
+  RoomState,
+  ServerMessage
+} from "../src/types/game";
 
 type ConnectionState = {
   playerId?: PlayerId;
@@ -50,11 +57,7 @@ export default class TakeupsServer implements Party.Server {
   async onStart() {
     const stored = await this.room.storage.get<RoomState>(STORAGE_KEY);
     this.state = stored ?? createInitialRoomState(this.room.id.toUpperCase());
-    this.state.settings = {
-      ...DEFAULT_SETTINGS,
-      ...this.state.settings,
-      customTopics: normalizeCustomTopics(this.state.settings.customTopics)
-    };
+    this.state.settings = this.normalizeSettings(this.state.settings);
     await this.recoverTimers();
     this.scheduleTimer();
   }
@@ -337,10 +340,14 @@ export default class TakeupsServer implements Party.Server {
       parsed.customTopics !== undefined
         ? normalizeCustomTopics(parsed.customTopics)
         : normalizeCustomTopics(this.state.settings.customTopics);
+    const currentSettings = this.normalizeSettings(this.state.settings);
     this.state.settings = {
-      ...DEFAULT_SETTINGS,
-      ...this.state.settings,
+      ...currentSettings,
       ...parsed,
+      intensity:
+        parsed.intensity === "absurd" || parsed.intensity === "spicy"
+          ? parsed.intensity
+          : currentSettings.intensity,
       topicPacks: topicPacks.length ? topicPacks : DEFAULT_SETTINGS.topicPacks,
       customTopics
     };
@@ -373,6 +380,17 @@ export default class TakeupsServer implements Party.Server {
       };
       this.state.totalScores[spectator.id] ??= 0;
     }
+  }
+
+  private normalizeSettings(settings: Partial<RoomSettings> & { intensity?: string }): RoomSettings {
+    const topicPacks = settings.topicPacks?.filter((pack) => TOPIC_PACKS.includes(pack)) ?? [];
+    return {
+      ...DEFAULT_SETTINGS,
+      ...settings,
+      intensity: settings.intensity === "absurd" ? "absurd" : "spicy",
+      topicPacks: topicPacks.length ? topicPacks : DEFAULT_SETTINGS.topicPacks,
+      customTopics: normalizeCustomTopics(settings.customTopics)
+    };
   }
 
   private async recoverTimers() {

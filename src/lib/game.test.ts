@@ -39,22 +39,27 @@ describe("generateRound", () => {
     }
   });
 
-  it("filters topics by selected packs and hierarchical intensity", () => {
+  it("filters topics by selected packs and two-level intensity", () => {
     const settings: RoomSettings = {
       ...DEFAULT_SETTINGS,
-      topicPacks: ["Food Crimes"],
+      topicPacks: ["Food Crimes With Consequences"],
       intensity: "spicy"
     };
     const selected = getSelectedTopics(settings);
     expect(selected.length).toBeGreaterThan(0);
-    expect(selected.every((topic) => topic.pack === "Food Crimes")).toBe(true);
+    expect(selected.every((topic) => topic.pack === "Food Crimes With Consequences")).toBe(true);
     expect(selected.every((topic) => topic.intensity !== "absurd")).toBe(true);
+  });
+
+  it("ships no built-in safe topics", () => {
+    expect(TOPICS.some((topic) => String(topic.intensity) === "safe")).toBe(false);
+    expect(TOPICS.every((topic) => topic.intensity === "spicy" || topic.intensity === "absurd")).toBe(true);
   });
 
   it("mixes custom topics into the selected topic pool", () => {
     const settings: RoomSettings = {
       ...DEFAULT_SETTINGS,
-      topicPacks: ["Food Crimes"],
+      topicPacks: ["Food Crimes With Consequences"],
       customTopics: [
         {
           id: "custom-chaos",

@@ -36,7 +36,7 @@ export const settingsSchema = z.object({
     )
     .max(MAX_CUSTOM_TOPICS)
     .default(DEFAULT_SETTINGS.customTopics),
-  intensity: z.enum(["safe", "spicy", "absurd"]).default(DEFAULT_SETTINGS.intensity)
+  intensity: z.enum(["spicy", "absurd"]).default(DEFAULT_SETTINGS.intensity)
 });
 
 export const partialSettingsSchema = settingsSchema.partial();

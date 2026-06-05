@@ -35,15 +35,16 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   allowSpectators: true,
   allowLateJoin: true,
   topicPacks: [
-    "Absurd Everyday Takes",
-    "Food Crimes",
-    "Social Etiquette",
-    "Pop Culture Logic",
-    "Tech & Internet",
-    "School / Work Chaos",
-    "Philosophical Nonsense",
-    "After Dark / Hot Takes",
-    "Spicy But Safe"
+    "Social Warfare",
+    "Dating & Damage Control",
+    "Money, Power & Bad Behavior",
+    "Politics Without Mercy",
+    "Workplace Hostilities",
+    "Food Crimes With Consequences",
+    "Tech, Privacy & Digital Crimes",
+    "Pop Culture Fights",
+    "Philosophical Chaos",
+    "Party Crimes"
   ],
   customTopics: [],
   intensity: "absurd"
