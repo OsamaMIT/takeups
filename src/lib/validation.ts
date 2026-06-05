@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { DEFAULT_SETTINGS, MAX_PLAYERS, MAX_SPECTATORS } from "@/lib/constants";
+import { DEFAULT_SETTINGS, MAX_CUSTOM_TOPICS, MAX_PLAYERS, MAX_SPECTATORS } from "@/lib/constants";
+import type { CustomTopic } from "@/types/game";
 
 export const nameSchema = z
   .string()
@@ -24,6 +25,17 @@ export const settingsSchema = z.object({
   allowSpectators: z.boolean().default(DEFAULT_SETTINGS.allowSpectators),
   allowLateJoin: z.boolean().default(DEFAULT_SETTINGS.allowLateJoin),
   topicPacks: z.array(z.string()).min(1).default(DEFAULT_SETTINGS.topicPacks),
+  customTopics: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(80),
+        prompt: z.string().trim().min(3).max(140),
+        sideA: z.string().trim().min(1).max(120),
+        sideB: z.string().trim().min(1).max(120)
+      })
+    )
+    .max(MAX_CUSTOM_TOPICS)
+    .default(DEFAULT_SETTINGS.customTopics),
   intensity: z.enum(["safe", "spicy", "absurd"]).default(DEFAULT_SETTINGS.intensity)
 });
 
@@ -74,6 +86,39 @@ export function sanitizeName(value: string): string {
 
 export function clampDefense(text: string, maxChars: number): string {
   return text.replace(/\s+/g, " ").trim().slice(0, maxChars);
+}
+
+export function sanitizeTopicText(value: string, maxChars: number): string {
+  return value.replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, maxChars);
+}
+
+export function normalizeCustomTopics(topics: readonly CustomTopic[] | undefined): CustomTopic[] {
+  const seen = new Set<string>();
+  const normalized: CustomTopic[] = [];
+
+  for (const topic of topics ?? []) {
+    if (normalized.length >= MAX_CUSTOM_TOPICS) break;
+    const prompt = sanitizeTopicText(topic.prompt, 140);
+    const sideA = sanitizeTopicText(topic.sideA, 120);
+    const sideB = sanitizeTopicText(topic.sideB, 120);
+    if (prompt.length < 3 || !sideA || !sideB) continue;
+
+    const baseId =
+      sanitizeTopicText(topic.id, 80)
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-|-$/g, "") || `custom-${normalized.length + 1}`;
+    let id = baseId;
+    let suffix = 2;
+    while (seen.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+    seen.add(id);
+    normalized.push({ id, prompt, sideA, sideB });
+  }
+
+  return normalized;
 }
 
 export function validateRoomCapacity(players: number, spectators: number): boolean {

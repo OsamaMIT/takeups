@@ -1,6 +1,9 @@
 "use client";
 
-import type { RoomSettings } from "@/types/game";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { MAX_CUSTOM_TOPICS } from "@/lib/constants";
+import type { CustomTopic, RoomSettings } from "@/types/game";
 import { TOPIC_PACKS } from "@/lib/topics";
 import { Button } from "@/components/ui/Button";
 
@@ -13,6 +16,7 @@ export function HostSettingsPanel({
   disabled: boolean;
   onChange: (settings: Partial<RoomSettings>) => void;
 }) {
+  const customTopics = settings.customTopics ?? [];
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2">
@@ -120,8 +124,146 @@ export function HostSettingsPanel({
           })}
         </div>
       </div>
+      <CustomTopicsSetting
+        topics={customTopics}
+        disabled={disabled}
+        onChange={(customTopics) => onChange({ customTopics })}
+      />
     </div>
   );
+}
+
+function CustomTopicsSetting({
+  topics,
+  disabled,
+  onChange
+}: {
+  topics: CustomTopic[];
+  disabled: boolean;
+  onChange: (topics: CustomTopic[]) => void;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [sideA, setSideA] = useState("");
+  const [sideB, setSideB] = useState("");
+  const cleanPrompt = prompt.trim();
+  const cleanSideA = sideA.trim();
+  const cleanSideB = sideB.trim();
+  const canAdd =
+    !disabled &&
+    topics.length < MAX_CUSTOM_TOPICS &&
+    cleanPrompt.length >= 3 &&
+    cleanSideA.length > 0 &&
+    cleanSideB.length > 0;
+
+  function addTopic() {
+    if (!canAdd) return;
+    onChange([
+      ...topics,
+      {
+        id: createCustomTopicId(cleanPrompt),
+        prompt: cleanPrompt.slice(0, 140),
+        sideA: cleanSideA.slice(0, 120),
+        sideB: cleanSideB.slice(0, 120)
+      }
+    ]);
+    setPrompt("");
+    setSideA("");
+    setSideB("");
+  }
+
+  return (
+    <div className="rounded-md border border-takeups-border bg-takeups-panel p-3">
+      <div className="flex items-center justify-between gap-3">
+        <label className="text-xs font-bold uppercase tracking-[0.22em] text-takeups-muted">
+          Custom Topics
+        </label>
+        <span className="font-mono text-xs text-takeups-muted">
+          {topics.length}/{MAX_CUSTOM_TOPICS}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-3">
+        <input
+          type="text"
+          value={prompt}
+          maxLength={140}
+          disabled={disabled}
+          onChange={(event) => setPrompt(event.target.value)}
+          placeholder="Debate prompt"
+          className="w-full rounded-md border border-takeups-border bg-takeups-bg px-3 py-2 text-sm text-takeups-text outline-none focus:border-takeups-blue"
+        />
+        <div className="grid gap-2 md:grid-cols-2">
+          <input
+            type="text"
+            value={sideA}
+            maxLength={120}
+            disabled={disabled}
+            onChange={(event) => setSideA(event.target.value)}
+            placeholder="Side A"
+            className="w-full rounded-md border border-takeups-border bg-takeups-bg px-3 py-2 text-sm text-takeups-text outline-none focus:border-takeups-blue"
+          />
+          <input
+            type="text"
+            value={sideB}
+            maxLength={120}
+            disabled={disabled}
+            onChange={(event) => setSideB(event.target.value)}
+            placeholder="Side B"
+            className="w-full rounded-md border border-takeups-border bg-takeups-bg px-3 py-2 text-sm text-takeups-text outline-none focus:border-takeups-blue"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="gold"
+          disabled={!canAdd}
+          onClick={addTopic}
+          icon={<Plus size={16} />}
+        >
+          Add Custom Topic
+        </Button>
+      </div>
+      <div className="mt-4 space-y-2">
+        {topics.length ? (
+          topics.map((topic) => (
+            <div
+              key={topic.id}
+              className="grid gap-3 rounded-md border border-takeups-border bg-takeups-bg p-3 text-sm text-takeups-text md:grid-cols-[1fr_auto]"
+            >
+              <div className="min-w-0">
+                <div className="font-semibold">{topic.prompt}</div>
+                <div className="mt-2 grid gap-2 text-xs text-takeups-muted md:grid-cols-2">
+                  <span className="rounded border border-takeups-border px-2 py-1">{topic.sideA}</span>
+                  <span className="rounded border border-takeups-border px-2 py-1">{topic.sideB}</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={disabled}
+                aria-label={`Remove ${topic.prompt}`}
+                className="h-10 min-h-10 w-10 px-0"
+                onClick={() => onChange(topics.filter((candidate) => candidate.id !== topic.id))}
+                icon={<Trash2 size={16} />}
+              />
+            </div>
+          ))
+        ) : (
+          <div className="rounded-md border border-dashed border-takeups-border px-3 py-4 text-center text-sm text-takeups-muted">
+            No custom topics loaded.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function createCustomTopicId(prompt: string): string {
+  const slug =
+    prompt
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48) || "custom-topic";
+  return `${slug}-${Date.now().toString(36)}`;
 }
 
 function NumberSetting({

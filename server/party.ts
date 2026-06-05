@@ -22,7 +22,12 @@ import {
   restartRoom,
   startNewRound
 } from "../src/lib/game";
-import { partialSettingsSchema, clientMessageSchema, sanitizeName } from "../src/lib/validation";
+import {
+  partialSettingsSchema,
+  clientMessageSchema,
+  normalizeCustomTopics,
+  sanitizeName
+} from "../src/lib/validation";
 import { TOPIC_PACKS } from "../src/lib/topics";
 import type { ClientMessage, Player, PlayerId, RoomState, ServerMessage } from "../src/types/game";
 
@@ -45,6 +50,11 @@ export default class TakeupsServer implements Party.Server {
   async onStart() {
     const stored = await this.room.storage.get<RoomState>(STORAGE_KEY);
     this.state = stored ?? createInitialRoomState(this.room.id.toUpperCase());
+    this.state.settings = {
+      ...DEFAULT_SETTINGS,
+      ...this.state.settings,
+      customTopics: normalizeCustomTopics(this.state.settings.customTopics)
+    };
     await this.recoverTimers();
     this.scheduleTimer();
   }
@@ -323,10 +333,16 @@ export default class TakeupsServer implements Party.Server {
     const parsed = partialSettingsSchema.parse(settings);
     const topicPacks =
       parsed.topicPacks?.filter((pack) => TOPIC_PACKS.includes(pack)) ?? this.state.settings.topicPacks;
+    const customTopics =
+      parsed.customTopics !== undefined
+        ? normalizeCustomTopics(parsed.customTopics)
+        : normalizeCustomTopics(this.state.settings.customTopics);
     this.state.settings = {
+      ...DEFAULT_SETTINGS,
       ...this.state.settings,
       ...parsed,
-      topicPacks: topicPacks.length ? topicPacks : DEFAULT_SETTINGS.topicPacks
+      topicPacks: topicPacks.length ? topicPacks : DEFAULT_SETTINGS.topicPacks,
+      customTopics
     };
     this.state.updatedAt = Date.now();
   }

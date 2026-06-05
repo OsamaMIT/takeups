@@ -7,6 +7,9 @@ export const MAX_SPECTATORS = 24;
 export const DEFAULT_DEFENSE = "DEFENSE NOT FILED.";
 export const MATCHUP_RESULT_SECONDS = 5;
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const CUSTOM_TOPIC_PACK = "Custom Topics";
+export const CUSTOM_TOPIC_WEIGHT = 5;
+export const MAX_CUSTOM_TOPICS = 30;
 
 export const PLAYER_COLORS = [
   "#4F8CFF",
@@ -39,7 +42,9 @@ export const DEFAULT_SETTINGS: RoomSettings = {
     "Tech & Internet",
     "School / Work Chaos",
     "Philosophical Nonsense",
+    "After Dark / Hot Takes",
     "Spicy But Safe"
   ],
+  customTopics: [],
   intensity: "absurd"
 };

@@ -1,5 +1,7 @@
 import { nanoid } from "nanoid";
 import {
+  CUSTOM_TOPIC_PACK,
+  CUSTOM_TOPIC_WEIGHT,
   DEFAULT_DEFENSE,
   DEFAULT_SETTINGS,
   MATCHUP_RESULT_SECONDS,
@@ -35,7 +37,7 @@ export function createInitialRoomState(roomCode: string, now = Date.now()): Room
     phase: "lobby",
     players: {},
     spectators: {},
-    settings: { ...DEFAULT_SETTINGS },
+    settings: { ...DEFAULT_SETTINGS, customTopics: [...DEFAULT_SETTINGS.customTopics] },
     roundNumber: 0,
     matchups: [],
     votingOrder: [],
@@ -75,15 +77,16 @@ export function createPlayer(args: {
 export function generateRound(
   players: Player[],
   topics: Topic[],
-  rng: () => number = Math.random
+  rng: () => number = Math.random,
+  topicWeight: (topic: Topic) => number = () => 1
 ): Matchup[] {
-  if (players.length < 2) return [];
+  if (players.length < 2 || topics.length === 0) return [];
   const shuffledPlayers = shuffle(players, rng);
-  const shuffledTopics = shuffle(topics, rng);
+  const selectedTopics = selectWeightedTopics(topics, shuffledPlayers.length, rng, topicWeight);
 
   return shuffledPlayers.map((playerA, index) => {
     const playerB = shuffledPlayers[(index + 1) % shuffledPlayers.length];
-    const topic = shuffledTopics[index % shuffledTopics.length];
+    const topic = selectedTopics[index % selectedTopics.length];
     const flip = rng() < 0.5;
     const optionA = `o_${nanoid(8)}`;
     const optionB = `o_${nanoid(8)}`;
@@ -105,14 +108,68 @@ export function generateRound(
   });
 }
 
+export function selectWeightedTopics(
+  topics: Topic[],
+  count: number,
+  rng: () => number = Math.random,
+  topicWeight: (topic: Topic) => number = () => 1
+): Topic[] {
+  const remaining = [...topics];
+  const selected: Topic[] = [];
+
+  while (remaining.length && selected.length < count) {
+    const totalWeight = remaining.reduce(
+      (sum, topic) => sum + Math.max(1, Math.floor(topicWeight(topic))),
+      0
+    );
+    let cursor = rng() * totalWeight;
+    let selectedIndex = remaining.length - 1;
+
+    for (let index = 0; index < remaining.length; index += 1) {
+      cursor -= Math.max(1, Math.floor(topicWeight(remaining[index])));
+      if (cursor <= 0) {
+        selectedIndex = index;
+        break;
+      }
+    }
+
+    selected.push(remaining.splice(selectedIndex, 1)[0]);
+  }
+
+  if (selected.length < count && topics.length) {
+    selected.push(...shuffle(topics, rng).slice(0, count - selected.length));
+  }
+
+  return selected;
+}
+
 export function getSelectedTopics(settings: RoomSettings): Topic[] {
   const selected = filterTopics(TOPICS, settings.topicPacks, settings.intensity);
-  return selected.length ? selected : TOPICS;
+  const customTopics = customTopicsToTopics(settings.customTopics ?? []);
+  const builtInTopics = selected.length ? selected : TOPICS;
+  return [...builtInTopics, ...customTopics];
+}
+
+export function customTopicsToTopics(customTopics: RoomSettings["customTopics"]): Topic[] {
+  return customTopics.map((topic) => ({
+    ...topic,
+    id: `custom-${topic.id}`,
+    pack: CUSTOM_TOPIC_PACK,
+    intensity: "spicy"
+  }));
+}
+
+export function topicWeight(topic: Topic): number {
+  return topic.pack === CUSTOM_TOPIC_PACK ? CUSTOM_TOPIC_WEIGHT : 1;
+}
+
+export function findTopic(settings: RoomSettings, topicId: string): Topic | undefined {
+  return getSelectedTopics(settings).find((topic) => topic.id === topicId);
 }
 
 export function startNewRound(state: RoomState, now = Date.now()): RoomState {
   const activePlayers = Object.values(state.players).filter((player) => player.connected);
-  const matchups = generateRound(activePlayers, getSelectedTopics(state.settings));
+  const matchups = generateRound(activePlayers, getSelectedTopics(state.settings), Math.random, topicWeight);
   const votingOrder = shuffle(matchups.map((matchup) => matchup.id));
   const drafts: RoomState["drafts"] = {};
   const submissions: RoomState["submissions"] = {};
@@ -156,7 +213,7 @@ export function assignedMatchups(state: RoomState, playerId: PlayerId): Matchup[
 export function getAssignments(state: RoomState, playerId: PlayerId | null): Assignment[] {
   if (!playerId || !state.players[playerId]) return [];
   return assignedMatchups(state, playerId).map((matchup) => {
-    const topic = TOPICS.find((candidate) => candidate.id === matchup.topicId);
+    const topic = findTopic(state.settings, matchup.topicId);
     const submission = state.submissions[matchup.id]?.[playerId];
     return {
       matchupId: matchup.id,
@@ -212,7 +269,7 @@ export function getVotingCard(
 ): PublicVotingCard | undefined {
   const matchup = currentMatchup(state);
   if (!matchup) return undefined;
-  const topic = TOPICS.find((candidate) => candidate.id === matchup.topicId);
+  const topic = findTopic(state.settings, matchup.topicId);
   if (!topic) return undefined;
   const viewerIsOnStand = viewerId === matchup.playerA || viewerId === matchup.playerB;
   const playerA = state.players[matchup.playerA];
@@ -344,7 +401,7 @@ export function promoteDraftsAndStartVoting(state: RoomState, now = Date.now()):
 export function closeCurrentVote(state: RoomState, now = Date.now()): RoomState {
   const matchup = currentMatchup(state);
   if (!matchup) return finishRound(state, now);
-  const topic = TOPICS.find((candidate) => candidate.id === matchup.topicId);
+  const topic = findTopic(state.settings, matchup.topicId);
   if (!topic) return finishRound(state, now);
   const result = scoreMatchup({
     matchup,

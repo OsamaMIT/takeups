@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { generateRound, getSelectedTopics } from "@/lib/game";
+import { generateRound, getSelectedTopics, selectWeightedTopics } from "@/lib/game";
 import { TOPICS } from "@/lib/topics";
 import type { Player, RoomSettings } from "@/types/game";
-import { DEFAULT_SETTINGS } from "@/lib/constants";
+import { CUSTOM_TOPIC_PACK, DEFAULT_SETTINGS } from "@/lib/constants";
 
 function makePlayers(count: number): Player[] {
   return Array.from({ length: count }, (_, index) => ({
@@ -49,5 +49,44 @@ describe("generateRound", () => {
     expect(selected.length).toBeGreaterThan(0);
     expect(selected.every((topic) => topic.pack === "Food Crimes")).toBe(true);
     expect(selected.every((topic) => topic.intensity !== "absurd")).toBe(true);
+  });
+
+  it("mixes custom topics into the selected topic pool", () => {
+    const settings: RoomSettings = {
+      ...DEFAULT_SETTINGS,
+      topicPacks: ["Food Crimes"],
+      customTopics: [
+        {
+          id: "custom-chaos",
+          prompt: "Should the group chat have a mayor?",
+          sideA: "Yes. Chaos needs elected leadership.",
+          sideB: "No. The group chat must remain lawless."
+        }
+      ]
+    };
+    const selected = getSelectedTopics(settings);
+    expect(selected.some((topic) => topic.id === "custom-custom-chaos")).toBe(true);
+    expect(selected.find((topic) => topic.id === "custom-custom-chaos")?.pack).toBe(CUSTOM_TOPIC_PACK);
+  });
+
+  it("can sample custom topics with a higher weight", () => {
+    const selected = selectWeightedTopics(
+      [
+        { id: "built-a", prompt: "A?", sideA: "Yes", sideB: "No" },
+        {
+          id: "custom-a",
+          prompt: "Custom?",
+          sideA: "Yes",
+          sideB: "No",
+          pack: CUSTOM_TOPIC_PACK
+        },
+        { id: "built-b", prompt: "B?", sideA: "Yes", sideB: "No" }
+      ],
+      1,
+      () => 0.2,
+      (topic) => (topic.pack === CUSTOM_TOPIC_PACK ? 5 : 1)
+    );
+
+    expect(selected[0].id).toBe("custom-a");
   });
 });

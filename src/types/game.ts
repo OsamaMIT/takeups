@@ -38,6 +38,8 @@ export type Topic = {
   intensity?: TopicIntensity;
 };
 
+export type CustomTopic = Pick<Topic, "id" | "prompt" | "sideA" | "sideB">;
+
 export type Matchup = {
   id: MatchupId;
   topicId: TopicId;
@@ -56,6 +58,7 @@ export type RoomSettings = {
   allowSpectators: boolean;
   allowLateJoin: boolean;
   topicPacks: string[];
+  customTopics: CustomTopic[];
   intensity: TopicIntensity;
 };
 
